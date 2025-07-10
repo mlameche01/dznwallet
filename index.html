@@ -13,22 +13,15 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background-color: #e0e0e0;
+      background-color: #000;
+      color: #fff;
       margin: 0;
       padding: 0;
     }
     header {
-      background-color: #424242;
-      color: white;
+      background-color: #111;
       text-align: center;
       padding: 1rem;
-    }
-    header div {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      max-width: 600px;
-      margin: auto;
     }
     main {
       padding: 2rem;
@@ -36,10 +29,9 @@
       margin: auto;
     }
     .card {
-      background: #f5f5f5;
+      background: #222;
       padding: 1.5rem;
       border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.05);
       margin-bottom: 1.5rem;
     }
     input, button, textarea {
@@ -48,30 +40,24 @@
       margin-top: 10px;
       font-size: 1rem;
       border-radius: 6px;
-      border: 1px solid #bbb;
-      box-sizing: border-box;
-      background: #fff;
+      border: 1px solid #555;
+      background: #000;
+      color: #fff;
     }
     button {
-      background-color: #616161;
-      color: white;
-      border: none;
+      background-color: #444;
       cursor: pointer;
-    }
-    button:hover {
-      background-color: #757575;
     }
     .balance {
       font-size: 2.5rem;
       font-weight: bold;
       text-align: center;
       margin-top: 1rem;
-      color: #212121;
     }
     .usd {
       text-align: center;
       font-size: 1.2rem;
-      color: #666;
+      color: #aaa;
       margin-bottom: 1.5rem;
     }
     #qrcode {
@@ -79,119 +65,30 @@
       justify-content: center;
       margin: 1rem 0;
     }
-    .note {
-      background-color: #eeeeee;
-      border-left: 5px solid #9e9e9e;
-      padding: 1rem;
-      margin-top: 1rem;
-      border-radius: 8px;
-      color: #333;
-    }
-    #privateKeyBox {
-      display: none;
-    }
-    footer {
-      text-align: center;
-      margin: 2rem auto;
-    }
-    footer button {
-      background-color: #000;
-      color: #fff;
-    }
   </style>
 </head>
 <body>
   <header>
-    <div>
-      <h1 id="title">🔐 DZN Wallet Sécurisé</h1>
-      <button id="langSwitch" onclick="toggleLang()" style="background: none; border: none; font-size: 1.5rem;">🇫🇷</button>
-    </div>
+    <h1>DZN Wallet</h1>
   </header>
   <main>
-    <div class="card" id="pinSetupBox" style="display:none;">
-      <h3 id="pinCreate">Créer un code PIN</h3>
-      <input type="password" id="newPin" placeholder="Nouveau code PIN" />
-      <button onclick="saveNewPIN()">Valider</button>
-    </div>
-
-    <div class="card" id="pinLoginBox" style="display:none;">
-      <h3 id="pinEnter">Entrez votre code PIN</h3>
-      <input type="password" id="pinInput" placeholder="Code PIN" />
-      <button onclick="checkPIN()">Déverrouiller</button>
-    </div>
-
-    <div class="card" id="walletBox" style="display:none;">
-      <p><strong id="addressLabel">Adresse :</strong> <span id="address">...</span></p>
-
+    <div class="card">
+      <h3>Adresse</h3>
+      <p id="address">...</p>
       <div id="qrcode"></div>
-
       <div class="balance" id="balance">... DZN</div>
       <div class="usd" id="usdValue">≈ ... DZD</div>
-
-      <button onclick="togglePrivateKey()">Voir/Masquer Clé privée</button>
-      <textarea id="privateKeyBox" readonly></textarea>
-
-      <h3>Envoyer des DZN</h3>
+      <button onclick="togglePrivateKey()">Clé Privée</button>
+      <textarea id="privateKeyBox" readonly style="display:none;"></textarea>
+    </div>
+    <div class="card">
+      <h3>Envoyer DZN</h3>
       <input id="to" placeholder="Adresse destinataire (0x...)" />
-      <button onclick="startScanner()">📷 Scanner QR</button>
-      <div id="reader" style="display:none;"></div>
-
       <input id="amount" placeholder="Montant à envoyer" />
       <button onclick="sendTokens()">Envoyer</button>
       <p id="status"></p>
-
-      <h4 id="historyTitle">Historique des envois</h4>
-      <ul id="historyList"></ul>
     </div>
   </main>
-
-  <footer>
-    <a href="https://mlameche01.github.io/Transfert/" target="_blank">
-      <button>🔁 Restituer les fonds à partir d'une clé privée</button>
-    </a>
-  </footer>
-
   <script src="wallet.js"></script>
-  <script>
-    let currentLang = localStorage.getItem("frn_lang") || "fr";
-
-    function toggleLang() {
-      currentLang = currentLang === "fr" ? "en" : "fr";
-      localStorage.setItem("frn_lang", currentLang);
-      updateLanguage();
-    }
-
-    function updateLanguage() {
-      const t = {
-        fr: {
-          title: "🔐 DZN Wallet Sécurisé",
-          pinCreate: "Créer un code PIN",
-          pinEnter: "Entrez votre code PIN",
-          send: "Envoyer",
-          addressLabel: "Adresse :",
-          historyTitle: "Historique des envois"
-        },
-        en: {
-          title: "🔐 DZN Secure Wallet",
-          pinCreate: "Create a PIN Code",
-          pinEnter: "Enter your PIN Code",
-          send: "Send",
-          addressLabel: "Address:",
-          historyTitle: "Transaction History"
-        }
-      };
-
-      const lang = t[currentLang];
-      document.getElementById("title").innerText = lang.title;
-      document.getElementById("pinCreate").innerText = lang.pinCreate;
-      document.getElementById("pinEnter").innerText = lang.pinEnter;
-      document.getElementById("addressLabel").innerText = lang.addressLabel;
-      document.querySelector("button[onclick='sendTokens()']").innerText = lang.send;
-      document.getElementById("historyTitle").innerText = lang.historyTitle;
-      document.getElementById("langSwitch").innerText = currentLang === "fr" ? "🇫🇷" : "🇬🇧";
-    }
-
-    window.addEventListener("DOMContentLoaded", updateLanguage);
-  </script>
 </body>
 </html>
