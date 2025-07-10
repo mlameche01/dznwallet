@@ -1,13 +1,13 @@
-// wallet.js
+ // wallet.js
 const TOKEN_ADDRESS = "0x64e73E00a9d37188C0e25EC5cfdDCD856Ad7a77D";
 const RPC = "https://mainnet.xo-dex.com/rpc";
-const DZN_TO_DZD = 120;
+const DZN_TO_DZD = 120; // 1 DZN = 120 DZD
 
 let provider, wallet, signer, token, decimals = 18;
 let scanner;
 
 window.onload = () => {
-  const pin = localStorage.getItem("dzn_pin");
+  const pin = localStorage.getItem("frn_pin");
   if (pin) {
     document.getElementById("pinLoginBox").style.display = "block";
   } else {
@@ -18,7 +18,7 @@ window.onload = () => {
 function saveNewPIN() {
   const pin = document.getElementById("newPin").value.trim();
   if (pin.length < 4) return alert("Le code PIN doit contenir au moins 4 chiffres");
-  localStorage.setItem("dzn_pin", pin);
+  localStorage.setItem("frn_pin", pin);
   document.getElementById("pinSetupBox").style.display = "none";
   document.getElementById("walletBox").style.display = "block";
   initWallet();
@@ -26,7 +26,7 @@ function saveNewPIN() {
 
 function checkPIN() {
   const entered = document.getElementById("pinInput").value;
-  const saved = localStorage.getItem("dzn_pin");
+  const saved = localStorage.getItem("frn_pin");
   if (entered === saved) {
     document.getElementById("pinLoginBox").style.display = "none";
     document.getElementById("walletBox").style.display = "block";
@@ -38,9 +38,9 @@ function checkPIN() {
 
 async function initWallet() {
   provider = new ethers.providers.JsonRpcProvider(RPC);
-  const savedPK = localStorage.getItem("dzn_key");
+  const savedPK = localStorage.getItem("frn_key");
   wallet = savedPK ? new ethers.Wallet(savedPK) : ethers.Wallet.createRandom();
-  if (!savedPK) localStorage.setItem("dzn_key", wallet.privateKey);
+  if (!savedPK) localStorage.setItem("frn_key", wallet.privateKey);
   signer = wallet.connect(provider);
 
   token = new ethers.Contract(TOKEN_ADDRESS, [
@@ -60,13 +60,13 @@ async function updateBalance() {
   try {
     decimals = await token.decimals();
     const raw = await token.balanceOf(wallet.address);
-    const dzn = parseFloat(ethers.utils.formatUnits(raw, decimals));
-    document.getElementById("balance").innerText = dzn.toFixed(4) + " DZN";
-    const dzdValue = dzn * DZN_TO_DZD;
+    const frn = parseFloat(ethers.utils.formatUnits(raw, decimals));
+    document.getElementById("balance").innerText = frn.toFixed(4) + " DZN";
+
+    const dzdValue = frn * DZN_TO_DZD;
     document.getElementById("usdValue").innerText = "≈ " + dzdValue.toFixed(2) + " DZD";
   } catch (err) {
     document.getElementById("balance").innerText = "Erreur de lecture";
-    document.getElementById("usdValue").innerText = "Erreur";
     console.error(err);
   }
 }
@@ -99,18 +99,18 @@ async function sendTokens() {
 }
 
 function saveToHistory(entry) {
-  const history = JSON.parse(localStorage.getItem("dzn_history") || "[]");
+  const history = JSON.parse(localStorage.getItem("frn_history") || "[]");
   history.unshift(entry);
-  localStorage.setItem("dzn_history", JSON.stringify(history.slice(0, 10)));
+  localStorage.setItem("frn_history", JSON.stringify(history.slice(0, 10)));
 }
 
 function loadHistory() {
-  const history = JSON.parse(localStorage.getItem("dzn_history") || "[]");
+  const history = JSON.parse(localStorage.getItem("frn_history") || "[]");
   const list = document.getElementById("historyList");
   list.innerHTML = "";
   history.forEach(h => {
     const li = document.createElement("li");
-    li.textContent = `Envoyé ${h.amount} DZN à ${h.to} le ${h.date}`;
+    li.textContent = Envoyé ${h.amount} DZN à ${h.to} le ${h.date};
     list.appendChild(li);
   });
 }
