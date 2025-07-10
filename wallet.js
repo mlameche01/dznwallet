@@ -1,7 +1,6 @@
-// wallet.js
 const TOKEN_ADDRESS = "0x64e73E00a9d37188C0e25EC5cfdDCD856Ad7a77D";
 const RPC = "https://mainnet.xo-dex.com/rpc";
-const DZN_TO_DZD = 120; // 1 DZN = 120 DZD
+const DZN_TO_DZD = 120;
 
 let provider, wallet, signer, token, decimals = 18;
 let scanner;
@@ -44,30 +43,29 @@ async function initWallet() {
   signer = wallet.connect(provider);
 
   token = new ethers.Contract(TOKEN_ADDRESS, [
-    { constant: true, inputs: [{ name: "_owner", type: "address" }], name: "balanceOf", outputs: [{ name: "balance", type: "uint256" }], type: "function" },
-    { constant: false, inputs: [{ name: "_to", type: "address" }, { name: "_value", type: "uint256" }], name: "transfer", outputs: [{ name: "success", type: "bool" }], type: "function" },
-    { constant: true, inputs: [], name: "decimals", outputs: [{ name: "", type: "uint8" }], type: "function" }
+    "function balanceOf(address) view returns (uint256)",
+    "function transfer(address to, uint256 value) returns (bool)",
+    "function decimals() view returns (uint8)"
   ], signer);
 
   document.getElementById("address").innerText = wallet.address;
   document.getElementById("privateKeyBox").value = wallet.privateKey;
   generateQRCode(wallet.address);
-  loadHistory();
   updateBalance();
+  loadHistory();
 }
 
 async function updateBalance() {
   try {
     decimals = await token.decimals();
     const raw = await token.balanceOf(wallet.address);
-    const frn = parseFloat(ethers.utils.formatUnits(raw, decimals));
-    document.getElementById("balance").innerText = frn.toFixed(4) + " DZN";
-
-    const dzdValue = frn * DZN_TO_DZD;
-    document.getElementById("usdValue").innerText = "≈ " + dzdValue.toFixed(2) + " DZD";
+    const dzn = parseFloat(ethers.utils.formatUnits(raw, decimals));
+    document.getElementById("balance").innerText = dzn.toFixed(4) + " DZN";
+    document.getElementById("usdValue").innerText = "≈ " + (dzn * DZN_TO_DZD).toFixed(2) + " DZD";
   } catch (err) {
-    document.getElementById("balance").innerText = "Erreur de lecture";
     console.error(err);
+    document.getElementById("balance").innerText = "Erreur";
+    document.getElementById("usdValue").innerText = "";
   }
 }
 
@@ -82,7 +80,7 @@ async function sendTokens() {
   const status = document.getElementById("status");
 
   if (!ethers.utils.isAddress(to)) return alert("Adresse invalide");
-  if (!to || !amount) return alert("Adresse et montant requis");
+  if (!amount) return alert("Montant requis");
 
   try {
     const tx = await token.transfer(to, ethers.utils.parseUnits(amount, decimals));
@@ -91,10 +89,9 @@ async function sendTokens() {
     status.innerText = "✅ Envoyé avec succès !";
     saveToHistory({ to, amount, date: new Date().toLocaleString() });
     updateBalance();
-    loadHistory();
   } catch (err) {
-    status.innerText = "❌ Erreur: " + err.message;
     console.error(err);
+    status.innerText = "❌ " + err.message;
   }
 }
 
@@ -110,7 +107,7 @@ function loadHistory() {
   list.innerHTML = "";
   history.forEach(h => {
     const li = document.createElement("li");
-    li.textContent = Envoyé ${h.amount} DZN à ${h.to} le ${h.date};
+    li.textContent = `Envoyé ${h.amount} DZN à ${h.to} le ${h.date}`;
     list.appendChild(li);
   });
 }
@@ -156,11 +153,11 @@ function runScanner() {
           scanner = null;
         });
       } else {
-        alert("QR Code invalide : pas une adresse Ethereum");
+        alert("QR Code invalide");
       }
     },
     (err) => {}
   ).catch(err => {
-    alert("Erreur accès caméra : " + err);
+    alert("Erreur caméra : " + err);
   });
 }
