@@ -110,7 +110,7 @@ function loadHistory() {
   list.innerHTML = "";
   history.forEach(h => {
     const li = document.createElement("li");
-    li.textContent = `Envoyé ${h.amount} DZN à ${h.to} le ${h.date}`;
+    li.textContent = Envoyé ${h.amount} DZN à ${h.to} le ${h.date};
     list.appendChild(li);
   });
 }
