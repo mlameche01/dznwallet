@@ -1,12 +1,10 @@
 {
-  "name": "DZN Wallet",
-  "short_name": "DZN",
-  "description": "Portefeuille Dinard Numérique (DZN) sur XODEX",
+  "name": "FRN Wallet Sécurisé",
+  "short_name": "FRN Wallet",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#000000",
+  "background_color": "#e0e0e0",
   "theme_color": "#424242",
-  "orientation": "portrait",
   "icons": [
     {
       "src": "icon-192.png",
@@ -20,3 +18,4 @@
     }
   ]
 }
+
