@@ -1,4 +1,4 @@
- // wallet.js
+// wallet.js
 const TOKEN_ADDRESS = "0x64e73E00a9d37188C0e25EC5cfdDCD856Ad7a77D";
 const RPC = "https://mainnet.xo-dex.com/rpc";
 const DZN_TO_DZD = 120; // 1 DZN = 120 DZD
@@ -110,7 +110,7 @@ function loadHistory() {
   list.innerHTML = "";
   history.forEach(h => {
     const li = document.createElement("li");
-    li.textContent = Envoyé ${h.amount} DZN à ${h.to} le ${h.date};
+    li.textContent = `Envoyé ${h.amount} DZN à ${h.to} le ${h.date}`;
     list.appendChild(li);
   });
 }
