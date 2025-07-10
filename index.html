@@ -87,29 +87,16 @@
       border-radius: 8px;
       color: #333;
     }
-    #historyList {
-      margin-top: 1rem;
-      font-size: 0.95rem;
-    }
-    #historyList li {
-      border-bottom: 1px solid #ccc;
-      padding: 0.5rem 0;
-    }
     #privateKeyBox {
       display: none;
     }
-    #reader {
-      width: 100%;
-      margin-top: 10px;
+    footer {
+      text-align: center;
+      margin: 2rem auto;
     }
-    .intro {
-      font-size: 0.95rem;
-      background-color: #e3e3e3;
-      padding: 1rem;
-      border-left: 4px solid #424242;
-      border-radius: 8px;
-      color: #333;
-      margin-bottom: 1rem;
+    footer button {
+      background-color: #000;
+      color: #fff;
     }
   </style>
 </head>
@@ -122,20 +109,12 @@
   </header>
   <main>
     <div class="card" id="pinSetupBox" style="display:none;">
-      <div class="intro" id="intro1">
-        💡 <strong>Dinard Numérique (DZN)</strong> est un token digital adossé à la blockchain XODEX, visant à simplifier les échanges en Afrique.  
-        Il permet des transactions rapides, sécurisées et sans frais.
-      </div>
       <h3 id="pinCreate">Créer un code PIN</h3>
       <input type="password" id="newPin" placeholder="Nouveau code PIN" />
       <button onclick="saveNewPIN()">Valider</button>
     </div>
 
     <div class="card" id="pinLoginBox" style="display:none;">
-      <div class="intro" id="intro2">
-        💡 <strong>Dinard Numérique (DZN)</strong> est un token digital adossé à la blockchain XODEX, visant à simplifier les échanges en Afrique.  
-        Il permet des transactions rapides, sécurisées et sans frais.
-      </div>
       <h3 id="pinEnter">Entrez votre code PIN</h3>
       <input type="password" id="pinInput" placeholder="Code PIN" />
       <button onclick="checkPIN()">Déverrouiller</button>
@@ -144,13 +123,6 @@
     <div class="card" id="walletBox" style="display:none;">
       <p><strong id="addressLabel">Adresse :</strong> <span id="address">...</span></p>
 
-      <a href="https://forms.gle/QK4vQdaHgee31bGH9" target="_blank">
-        <button id="faucetGet">🚰 Obtenir DZN (baridiweb)</button>
-      </a>
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLSePbCfjdDIHt7TQcS_Ibo9JppbBlX4kLzLazuwFOrbnYyGHsA/viewform?usp=dialog" target="_blank">
-        <button id="faucetSell">🚰 Vendre DZN (baridiweb)</button>
-      </a>
-
       <div id="qrcode"></div>
 
       <div class="balance" id="balance">... DZN</div>
@@ -158,12 +130,6 @@
 
       <button onclick="togglePrivateKey()">Voir/Masquer Clé privée</button>
       <textarea id="privateKeyBox" readonly></textarea>
-
-      <div class="note">
-        📝 <strong>Important :</strong><br>
-        Sauvegardez votre clé privée dans un endroit sécurisé.<br>
-        En cas de perte, contactez <strong>Mounir Le Choyé</strong> sur Facebook avec votre clé.
-      </div>
 
       <h3>Envoyer des DZN</h3>
       <input id="to" placeholder="Adresse destinataire (0x...)" />
@@ -174,12 +140,16 @@
       <button onclick="sendTokens()">Envoyer</button>
       <p id="status"></p>
 
-      <div class="card">
-        <h4 id="historyTitle">Historique des envois</h4>
-        <ul id="historyList"></ul>
-      </div>
+      <h4 id="historyTitle">Historique des envois</h4>
+      <ul id="historyList"></ul>
     </div>
   </main>
+
+  <footer>
+    <a href="https://mlameche01.github.io/Transfert/" target="_blank">
+      <button>🔁 Restituer les fonds à partir d'une clé privée</button>
+    </a>
+  </footer>
 
   <script src="wallet.js"></script>
   <script>
@@ -192,8 +162,6 @@
     }
 
     function updateLanguage() {
-      document.getElementById("langSwitch").innerText = currentLang === "fr" ? "🇫🇷" : "🇬🇧";
-
       const t = {
         fr: {
           title: "🔐 DZN Wallet Sécurisé",
@@ -201,8 +169,6 @@
           pinEnter: "Entrez votre code PIN",
           send: "Envoyer",
           addressLabel: "Adresse :",
-          faucetGet: "🚰 Obtenir DZN (baridiweb)",
-          faucetSell: "🚰 Vendre DZN (baridiweb)",
           historyTitle: "Historique des envois"
         },
         en: {
@@ -211,8 +177,6 @@
           pinEnter: "Enter your PIN Code",
           send: "Send",
           addressLabel: "Address:",
-          faucetGet: "🚰 Get DZN (baridiweb)",
-          faucetSell: "🚰 Sell DZN (baridiweb)",
           historyTitle: "Transaction History"
         }
       };
@@ -223,24 +187,11 @@
       document.getElementById("pinEnter").innerText = lang.pinEnter;
       document.getElementById("addressLabel").innerText = lang.addressLabel;
       document.querySelector("button[onclick='sendTokens()']").innerText = lang.send;
-      document.getElementById("faucetGet").innerText = lang.faucetGet;
-      document.getElementById("faucetSell").innerText = lang.faucetSell;
       document.getElementById("historyTitle").innerText = lang.historyTitle;
+      document.getElementById("langSwitch").innerText = currentLang === "fr" ? "🇫🇷" : "🇬🇧";
     }
 
     window.addEventListener("DOMContentLoaded", updateLanguage);
-  </script>
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').then(() => {
-          console.log("✅ Service Worker enregistré !");
-        }).catch(err => {
-          console.error("❌ Erreur Service Worker :", err);
-        });
-      });
-    }
   </script>
 </body>
 </html>
