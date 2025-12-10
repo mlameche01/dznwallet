@@ -1,52 +1,70 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Wallet DZD - Polygon</title>
+<meta charset="UTF-8">
+<title>Wallet DZD - Polygon</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+.box { padding: 15px; border-radius: 10px; background: white; margin-bottom: 20px; }
+input, button { padding: 10px; margin-top: 10px; width: 100%; }
+button { background: black; color: white; font-weight: bold; border: none; }
+</style>
+
 </head>
 <body>
-  <h1>Wallet DZD (Polygon)</h1>
 
-  <!-- PIN setup -->
-  <div id="pinSetupBox" style="display:none;">
-    <h3>Configurer un PIN et créer un nouveau wallet</h3>
-    <input id="pinInput" placeholder="Entrez un PIN (min 4 chiffres)" />
-    <button id="setupPinBtn">Créer et enregistrer</button>
-    <hr/>
-    <h4>Ou restaurer une clé privée</h4>
-    <input id="privKeyInput" placeholder="0x..." style="width: 400px;" />
-    <button id="restoreBtn">Restaurer</button>
-  </div>
+<h2>Wallet DZD (Polygon)</h2>
 
-  <!-- PIN login -->
-  <div id="pinLoginBox" style="display:none;">
-    <h3>Entrez votre PIN</h3>
-    <input id="pinLoginInput" placeholder="PIN" />
-    <button id="loginWithPinBtn" onclick="loginWithPin()">Se connecter</button>
-  </div>
 
-  <!-- Main UI -->
-  <div id="mainBox" style="display:none;">
-    <p>Adresse: <span id="addressValue"></span></p>
-    <p>Solde token: <span id="balanceValue">-</span></p>
-    <p>Solde natif: <span id="nativeBalance">-</span></p>
-    <img id="qrcode" alt="qr" />
+<!-- SETUP PIN + CREATE WALLET -->
+<div id="pinSetupBox" class="box" style="display:none;">
+    <h3>Créer un Wallet</h3>
+    <input id="setupPinInput" placeholder="Créer un PIN (min 4 chiffres)">
+    <button onclick="setupPin()">Créer le Wallet</button>
+
+    <h4>Restaurer un Wallet</h4>
+    <input id="restoreInput" placeholder="Clé privée 0x...">
+    <button onclick="restoreWallet()">Restaurer</button>
+</div>
+
+
+<!-- LOGIN WITH PIN -->
+<div id="pinLoginBox" class="box" style="display:none;">
+    <h3>Entrer votre PIN</h3>
+    <input id="loginPinInput" placeholder="PIN">
+    <button onclick="loginPin()">Connexion</button>
+</div>
+
+
+<!-- MAIN WALLET UI -->
+<div id="mainBox" class="box" style="display:none;">
+    <h3>Mon portefeuille</h3>
+
+    <p>Adresse :</p>
+    <div id="myAddress" style="word-wrap: break-word;"></div>
+
+    <p>Solde DZD :</p>
+    <div id="myBalance">0</div>
+
+    <p>Solde MATIC :</p>
+    <div id="nativeBalance">0</div>
+
+    <button onclick="refreshBalance()">🔄 Rafraîchir</button>
 
     <h3>Envoyer des DZD</h3>
-    <input id="sendTo" placeholder="Adresse destinataire" style="width:400px" />
-    <input id="sendAmount" placeholder="Montant" style="width:150px" />
-    <button id="sendBtn">Envoyer</button>
+    <input id="sendTo" placeholder="Adresse destinataire">
+    <input id="sendAmount" placeholder="Montant DZD">
+    <button onclick="sendTokens()">Envoyer</button>
 
-    <hr/>
-    <button id="refreshBalanceBtn">Rafraîchir solde</button>
-    <button onclick="wipeWallet()">Supprimer données locales (wipe)</button>
-  </div>
+    <button style="background:red;" onclick="wipe()">Supprimer le Wallet</button>
+</div>
 
-  <!-- Import ethers.js (dev quick usage). If you prefer no CDN, replace with a local ethers.js bundle. -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
-  <!-- Your wallet logic -->
-  <script src="wallet.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+<script src="wallet.js"></script>
+
 </body>
 </html>
 

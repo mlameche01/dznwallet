@@ -1,10 +1,12 @@
-{
-  "name": "FRN Wallet Sécurisé",
-  "short_name": "FRN Wallet",
-  "start_url": "./index.html",
+{{
+  "name": "DZD Wallet",
+  "short_name": "DZD Wallet",
+  "description": "Portefeuille numérique DZD sur le réseau Polygon.",
+  "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#e0e0e0",
-  "theme_color": "#424242",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "icon-192.png",
