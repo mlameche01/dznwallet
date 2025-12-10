@@ -1,166 +1,171 @@
-// wallet.js
-const TOKEN_ADDRESS = "0x64e73E00a9d37188C0e25EC5cfdDCD856Ad7a77D";
-const RPC = "https://mainnet.xo-dex.com/rpc";
-const FRN_TO_DZD = 120; // 1 FRN = 120 DZD
+// wallet.js - version adaptée pour Polygon & token DZD
+// Assumes ethers.js is available as window.ethers (via script tag in index.html)
 
-let provider, wallet, signer, token, decimals = 18;
-let scanner;
+const TOKEN_ADDRESS = "0x07221c2D1dc1D5485Bf069871E2820864B4948F7";
+const RPC = "https://polygon-rpc.com";
+const TOKEN_SYMBOL = "DZD";
+const TOKEN_DECIMALS = 18;
 
-window.onload = () => {
-  const pin = localStorage.getItem("frn_pin");
-  if (pin) {
+// LocalStorage keys (renamed from FRN -> DZD)
+const STORAGE_KEY_PRIVATE = "dzd_private_key";   // encrypted or raw (your choice)
+const STORAGE_KEY_PIN = "dzd_pin";
+
+// Global objects
+let provider, wallet, signer, tokenContract;
+
+window.addEventListener("load", async () => {
+  // Init provider
+  provider = new ethers.providers.JsonRpcProvider(RPC);
+
+  // Setup UI depending on whether a PIN / private key exists
+  const pin = localStorage.getItem(STORAGE_KEY_PIN);
+  const pk = localStorage.getItem(STORAGE_KEY_PRIVATE);
+
+  if (pin && pk) {
     document.getElementById("pinLoginBox").style.display = "block";
   } else {
     document.getElementById("pinSetupBox").style.display = "block";
   }
+
+  // Attach UI handlers
+  attachHandlers();
+});
+
+function attachHandlers() {
+  document.getElementById("setupPinBtn")?.addEventListener("click", setupPinAndGenerate);
+  document.getElementById("loginPinBtn")?.addEventListener("click", loginWithPin);
+  document.getElementById("generateBtn")?.addEventListener("click", generateNewWallet);
+  document.getElementById("restoreBtn")?.addEventListener("click", restoreFromPrivateKey);
+  document.getElementById("sendBtn")?.addEventListener("click", sendToken);
+  document.getElementById("refreshBalanceBtn")?.addEventListener("click", refreshBalance);
+  // Add any other button bindings you have in your index.html
+}
+
+async function setupPinAndGenerate() {
+  const pin = document.getElementById("pinInput")?.value;
+  if (!pin || pin.length < 4) { alert("Choisissez un PIN d'au moins 4 chiffres"); return; }
+
+  // Generate new wallet (ethers random)
+  const newWallet = ethers.Wallet.createRandom();
+  // WARNING: saving raw private key in localStorage is not secure; consider encryption/key derivation
+  localStorage.setItem(STORAGE_KEY_PRIVATE, newWallet.privateKey);
+  localStorage.setItem(STORAGE_KEY_PIN, pin);
+
+  await loadWalletFromPrivateKey(newWallet.privateKey);
+  alert("Portefeuille créé et PIN enregistré. Sauvegardez votre clé privée en lieu sûr !");
+  showMainUI();
+}
+
+async function generateNewWallet() {
+  const newWallet = ethers.Wallet.createRandom();
+  localStorage.setItem(STORAGE_KEY_PRIVATE, newWallet.privateKey);
+  // do not set pin here - let user set it explicitly via setupPinAndGenerate if desired
+  await loadWalletFromPrivateKey(newWallet.privateKey);
+  showMainUI();
+}
+
+async function restoreFromPrivateKey() {
+  const raw = document.getElementById("privKeyInput")?.value;
+  if (!raw || !raw.startsWith("0x") || raw.length < 50) { alert("Clé privée invalide"); return; }
+  localStorage.setItem(STORAGE_KEY_PRIVATE, raw);
+  await loadWalletFromPrivateKey(raw);
+  alert("Clé privée restaurée.");
+  showMainUI();
+}
+
+async function loginWithPin() {
+  const pin = document.getElementById("pinLoginInput")?.value;
+  const stored = localStorage.getItem(STORAGE_KEY_PIN);
+  if (!stored) { alert("Aucun PIN trouvé. Configurez le wallet d'abord."); return; }
+  if (pin !== stored) { alert("PIN incorrect"); return; }
+
+  const pk = localStorage.getItem(STORAGE_KEY_PRIVATE);
+  if (!pk) { alert("Aucune clé privée trouvée. Restaurez votre clé."); return; }
+  await loadWalletFromPrivateKey(pk);
+  showMainUI();
+}
+
+async function loadWalletFromPrivateKey(privateKey) {
+  try {
+    wallet = new ethers.Wallet(privateKey, provider);
+    signer = wallet.connect(provider);
+    tokenContract = new ethers.Contract(TOKEN_ADDRESS,
+      // Minimal ERC20 ABI
+      [
+        "function name() view returns (string)",
+        "function symbol() view returns (string)",
+        "function decimals() view returns (uint8)",
+        "function balanceOf(address) view returns (uint256)",
+        "function transfer(address to, uint amount) returns (bool)"
+      ],
+      signer
+    );
+    await refreshBalance();
+    displayAddress(wallet.address);
+  } catch (err) {
+    console.error("Erreur en chargeant le wallet:", err);
+    alert("Impossible de charger le wallet: " + err.message);
+  }
+}
+
+async function refreshBalance() {
+  if (!tokenContract || !wallet) return;
+  try {
+    const bal = await tokenContract.balanceOf(wallet.address);
+    const decimals = await tokenContract.decimals().catch(() => TOKEN_DECIMALS);
+    const human = ethers.utils.formatUnits(bal, decimals);
+    document.getElementById("balanceValue").innerText = human + " " + TOKEN_SYMBOL;
+    // Optionally also show native MATIC balance
+    const matic = await provider.getBalance(wallet.address);
+    document.getElementById("nativeBalance").innerText = ethers.utils.formatEther(matic) + " MATIC";
+  } catch (err) {
+    console.error(err);
+    document.getElementById("balanceValue").innerText = "Erreur";
+  }
+}
+
+function displayAddress(addr) {
+  document.getElementById("addressValue").innerText = addr || "";
+  document.getElementById("qrcode").src = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent(addr);
+}
+
+async function sendToken() {
+  if (!tokenContract || !wallet) { alert("Wallet non chargé"); return; }
+  const to = document.getElementById("sendTo")?.value;
+  const amount = document.getElementById("sendAmount")?.value;
+  if (!ethers.utils.isAddress(to)) { alert("Adresse de destination invalide"); return; }
+  if (!amount || isNaN(Number(amount))) { alert("Montant invalide"); return; }
+  const decimals = await tokenContract.decimals().catch(() => TOKEN_DECIMALS);
+  const amt = ethers.utils.parseUnits(amount, decimals);
+
+  try {
+    const tx = await tokenContract.transfer(to, amt);
+    alert("Transaction envoyée. Hash: " + tx.hash);
+    await tx.wait();
+    alert("Transaction confirmée.");
+    await refreshBalance();
+  } catch (err) {
+    console.error(err);
+    alert("Erreur lors de l'envoi: " + (err?.message || err));
+  }
+}
+
+function showMainUI() {
+  document.getElementById("pinLoginBox") && (document.getElementById("pinLoginBox").style.display = "none");
+  document.getElementById("pinSetupBox") && (document.getElementById("pinSetupBox").style.display = "none");
+  document.getElementById("mainBox") && (document.getElementById("mainBox").style.display = "block");
+}
+
+// Optional: wipe wallet (for testing)
+function wipeWallet() {
+  localStorage.removeItem(STORAGE_KEY_PRIVATE);
+  localStorage.removeItem(STORAGE_KEY_PIN);
+  alert("Données locales supprimées.");
+  window.location.reload();
+}
+
+// Expose for debugging in console
+window.walletApp = {
+  refreshBalance, sendToken, wipeWallet, loadWalletFromPrivateKey
 };
 
-function saveNewPIN() {
-  const pin = document.getElementById("newPin").value.trim();
-  if (pin.length < 4) return alert("Le code PIN doit contenir au moins 4 chiffres");
-  localStorage.setItem("frn_pin", pin);
-  document.getElementById("pinSetupBox").style.display = "none";
-  document.getElementById("walletBox").style.display = "block";
-  initWallet();
-}
-
-function checkPIN() {
-  const entered = document.getElementById("pinInput").value;
-  const saved = localStorage.getItem("frn_pin");
-  if (entered === saved) {
-    document.getElementById("pinLoginBox").style.display = "none";
-    document.getElementById("walletBox").style.display = "block";
-    initWallet();
-  } else {
-    alert("❌ Code PIN incorrect");
-  }
-}
-
-async function initWallet() {
-  provider = new ethers.providers.JsonRpcProvider(RPC);
-  const savedPK = localStorage.getItem("frn_key");
-  wallet = savedPK ? new ethers.Wallet(savedPK) : ethers.Wallet.createRandom();
-  if (!savedPK) localStorage.setItem("frn_key", wallet.privateKey);
-  signer = wallet.connect(provider);
-
-  token = new ethers.Contract(TOKEN_ADDRESS, [
-    { constant: true, inputs: [{ name: "_owner", type: "address" }], name: "balanceOf", outputs: [{ name: "balance", type: "uint256" }], type: "function" },
-    { constant: false, inputs: [{ name: "_to", type: "address" }, { name: "_value", type: "uint256" }], name: "transfer", outputs: [{ name: "success", type: "bool" }], type: "function" },
-    { constant: true, inputs: [], name: "decimals", outputs: [{ name: "", type: "uint8" }], type: "function" }
-  ], signer);
-
-  document.getElementById("address").innerText = wallet.address;
-  document.getElementById("privateKeyBox").value = wallet.privateKey;
-  generateQRCode(wallet.address);
-  loadHistory();
-  updateBalance();
-}
-
-async function updateBalance() {
-  try {
-    decimals = await token.decimals();
-    const raw = await token.balanceOf(wallet.address);
-    const frn = parseFloat(ethers.utils.formatUnits(raw, decimals));
-    document.getElementById("balance").innerText = frn.toFixed(4) + " FRN";
-
-    const dzdValue = frn * FRN_TO_DZD;
-    document.getElementById("usdValue").innerText = "≈ " + dzdValue.toFixed(2) + " DZD";
-  } catch (err) {
-    document.getElementById("balance").innerText = "Erreur de lecture";
-    console.error(err);
-  }
-}
-
-function togglePrivateKey() {
-  const box = document.getElementById("privateKeyBox");
-  box.style.display = box.style.display === "none" ? "block" : "none";
-}
-
-async function sendTokens() {
-  const to = document.getElementById("to").value.trim();
-  const amount = document.getElementById("amount").value.trim();
-  const status = document.getElementById("status");
-
-  if (!ethers.utils.isAddress(to)) return alert("Adresse invalide");
-  if (!to || !amount) return alert("Adresse et montant requis");
-
-  try {
-    const tx = await token.transfer(to, ethers.utils.parseUnits(amount, decimals));
-    status.innerText = "⏳ Envoi en cours...";
-    await tx.wait();
-    status.innerText = "✅ Envoyé avec succès !";
-    saveToHistory({ to, amount, date: new Date().toLocaleString() });
-    updateBalance();
-    loadHistory();
-  } catch (err) {
-    status.innerText = "❌ Erreur: " + err.message;
-    console.error(err);
-  }
-}
-
-function saveToHistory(entry) {
-  const history = JSON.parse(localStorage.getItem("frn_history") || "[]");
-  history.unshift(entry);
-  localStorage.setItem("frn_history", JSON.stringify(history.slice(0, 10)));
-}
-
-function loadHistory() {
-  const history = JSON.parse(localStorage.getItem("frn_history") || "[]");
-  const list = document.getElementById("historyList");
-  list.innerHTML = "";
-  history.forEach(h => {
-    const li = document.createElement("li");
-    li.textContent = `Envoyé ${h.amount} FRN à ${h.to} le ${h.date}`;
-    list.appendChild(li);
-  });
-}
-
-function generateQRCode(address) {
-  const qrContainer = document.getElementById("qrcode");
-  qrContainer.innerHTML = "";
-  new QRCode(qrContainer, {
-    text: address,
-    width: 128,
-    height: 128,
-    colorDark: "#000000",
-    colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.H
-  });
-}
-
-function startScanner() {
-  const reader = document.getElementById("reader");
-  reader.style.display = "block";
-
-  if (scanner) {
-    scanner.stop().then(() => {
-      scanner.clear();
-      runScanner();
-    });
-  } else {
-    runScanner();
-  }
-}
-
-function runScanner() {
-  scanner = new Html5Qrcode("reader");
-  scanner.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    (decodedText) => {
-      if (ethers.utils.isAddress(decodedText.trim())) {
-        document.getElementById("to").value = decodedText.trim();
-        scanner.stop().then(() => {
-          document.getElementById("reader").style.display = "none";
-          scanner.clear();
-          scanner = null;
-        });
-      } else {
-        alert("QR Code invalide : pas une adresse Ethereum");
-      }
-    },
-    (err) => {}
-  ).catch(err => {
-    alert("Erreur accès caméra : " + err);
-  });
-}
